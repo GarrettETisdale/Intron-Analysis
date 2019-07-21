@@ -3,6 +3,7 @@ Walk through for the analysis of the kinetics of intron length.
 ## Reproduction of Results – Walkthrough
 All python programs were programmed with the default libraries acquired from a base Anaconda installation.
 All R scripts were programmed with the installation of R and acquired libraries as outlines in the Mus musculus walkthrough.
+NOTE: Both the installation programs required for R and R Studio were too large for uploading to github, as such the exact installation programs will be avaliable upon request (tisdalegarrett@gmail.com)
 ### Mus musculus:
 1.	Acquired supplementary file 3 from Global quantification of mammalian gene expression control by Bjorn Schwanhausser et al. (https://www.nature.com/articles/nature10098). File name downloaded as nature10098-s5.xls and saved into the Mus musculus folder.
 2.	Copied data column wise selecting columns “MGI ID”, “mRNA copy number average [molecules/cell]”, “mRNA half-life average [h]”, and “transcription rate (vsr) average [molecules/(cell*h)]” into a new csv file for further parsing named “Schwanhausser et al – unparsed.csv” saved into the Mus musculus folder.
