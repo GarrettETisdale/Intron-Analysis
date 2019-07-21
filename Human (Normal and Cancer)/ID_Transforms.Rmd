@@ -1,0 +1,108 @@
+
+
+```{r}
+library(biomaRt) ### Used for ID transforms between Ensemble IDs and Entrez IDs
+library(GenomicFeatures)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene) ### Human genome annotations
+
+### Human genome annoataions
+txdb = TxDb.Hsapiens.UCSC.hg19.knownGene
+
+### txdb format data for the Human genome to be used with GenomicFeatures
+transcript_lengths = transcriptLengths(txdb, with.cds_len=TRUE, with.utr5_len=TRUE, with.utr3_len=TRUE)
+
+
+### Establishing which converstion will be applied to get the needed Entrez gene IDs for GenomicFeatures
+mart = useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+
+### Ensembl
+ensembl.names = read.csv("Human-Normal-and-Cancer-Mean-Gene-Expression-Data.csv", header = TRUE)[,1]
+
+### Sends the Ensembl IDs off to be returned as their Entrez IDs
+genes.ID = getBM(
+  filters="ensembl_gene_id",
+  attributes=c("ensembl_gene_id", "entrezgene_id"),
+  values=ensembl.names,
+  mart=mart)
+
+
+### Read in all expression data as obtained from 
+### Extracting-Human-Control-and-Cancer-Gene-Expression-Data.py wiht added header
+expression.data = read.csv("Human-Normal-and-Cancer-Mean-Gene-Expression-Data.csv", header = TRUE)
+expression.data[,1] = as.character(expression.data[,1]) ### Reformat IDs to characters
+expression.data$entrezID = NA ### Add column to save Entrez IDs
+
+genes.ID[,2] = as.numeric(genes.ID[,2]) ### Reformat returned Entrez IDs as numeric
+
+
+### A quasi-optimized search algorithm for matching the matched IDs back to the expression data
+itterations = seq(1, length(expression.data[,1]))
+for(i in seq(1, length(genes.ID[,2]))){
+  for(x in itterations){
+    if(genes.ID[i,1] == expression.data[x,1]){
+      expression.data[x,4] = genes.ID[i,2] ### Add proper Entrez ID to expression data set
+      print(i)
+      itterations = itterations[ itterations != x ] ### delete the found gene from the search list
+      break
+    }
+  }
+}
+
+
+### Remove all rows with NA values
+expression.data.no.na = expression.data[complete.cases(expression.data), ]
+
+
+### Create a list of all Entrez IDs in avaliable data set that will be matched to each gene
+gene.id.list.numeric = c()
+for(i in seq(1, length(expression.data.no.na[,4]))){
+  gene.id.list.numeric = c(gene.id.list.numeric, as.numeric(expression.data.no.na[i,4]))
+}
+
+
+common.ids = c() ### A list which will contain all common IDs between the expression data
+                 ### and the TxDb.Hsapiens.UCSC.hg19.knownGene annotations
+list.of.ids = transcript_lengths$gene_id ### All transcript Entrez gene IDs in 
+                                         ### TxDb.Hsapiens.UCSC.hg19.knownGene to be matched
+### Match all matching IDs and save all non-repeating IDs
+for(i in seq(1, length(list.of.ids))){
+  if(as.numeric(list.of.ids[i]) %in% common.ids == FALSE){
+    if(list.of.ids[i] %in% gene.id.list.numeric == TRUE){
+      if(is.na(as.numeric(list.of.ids[i])) == FALSE){
+        common.ids = c(common.ids, as.numeric(list.of.ids[i]))
+        print(c(length(list.of.ids), i))
+      }
+    }
+  }
+}
+
+
+### Blank matrix to be filled out to contain:
+#           column 1: Ensembl ID
+#           column 2: Entrez ID
+#           column 3: Control Expression
+#           column 4: Cancer Expression
+data.matrix = matrix(NA, nrow=length(common.ids), ncol = 4)
+
+### Remove all duplicated data points with repeated Entrez ID values for 1 data point per gene
+expression.data.no.na.no.repeat = expression.data.no.na[!duplicated(expression.data.no.na$entrezID),]
+
+### Make row names the Entrez ID for easy calling of desired data
+rownames(expression.data.no.na.no.repeat) = expression.data.no.na.no.repeat$entrezID
+
+### Itterate through all common gene IDs and fill out the data.matrix
+for(i in seq(1, length(common.ids))){
+  row.data = expression.data.no.na.no.repeat[as.character(common.ids[i]),]
+  data.matrix[i,1] = row.data$Gene.ID
+  data.matrix[i,2] = row.data$entrezID
+  data.matrix[i,3] = row.data$Control
+  data.matrix[i,4] = row.data$Cancer
+
+  print(c(length(common.ids), i))
+}
+
+### Save all commonly matched IDs 
+write.csv(data.matrix, file = "Human-Normal-and-Cancer-Mean-Gene-Expression-Data_With-Common-Ids.csv", row.names=FALSE, col.names=TRUE)
+
+
+```

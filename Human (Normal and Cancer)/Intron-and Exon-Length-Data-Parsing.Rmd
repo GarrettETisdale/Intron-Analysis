@@ -1,0 +1,78 @@
+
+
+```{r}
+library(GenomicFeatures)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+
+### txdb format data for the human genome to be used with GenomicFeatures
+txdb = TxDb.Hsapiens.UCSC.hg19.knownGene
+
+### Aquiring all transcript (exon) lengths with the lengths of the CDS, 5'UTR, 
+### and 3'UTR included for every human gene in txdb mouse genome package
+transcript_lengths = transcriptLengths(txdb, with.cds_len=TRUE, with.utr5_len=TRUE, with.utr3_len=TRUE)
+
+### Aquiring all intron lengths for every human gene in txdb mouse genome package
+introns = intronsByTranscript(txdb, use.names=TRUE)
+
+### Importing variables from ID_Transforms.Rmd output
+### Human-Normal-and-Cancer-Mean-Gene-Expression-Data_With-Common-Ids .csv
+gene.ids = as.character(read.csv('Human-Normal-and-Cancer-Mean-Gene-Expression-Data_With-Common-Ids.csv', header=TRUE)[,1]) # Ensembl Gene IDs
+common.ids = read.csv('Human-Normal-and-Cancer-Mean-Gene-Expression-Data_With-Common-Ids.csv', header=TRUE)[,2]             # Entrez Gene IDs
+expression.control = read.csv('Human-Normal-and-Cancer-Mean-Gene-Expression-Data_With-Common-Ids.csv', header=TRUE)[,3]     # Control Expression
+expression.cancer = read.csv('Human-Normal-and-Cancer-Mean-Gene-Expression-Data_With-Common-Ids.csv', header=TRUE)[,4]      # Cancer Expression
+
+
+### Blank matrix to be filled out to contain:
+#           Column 1: Ensembl Gene ID
+#           column 2: Entrez Gene IDs
+#           column 3: Control Expression
+#           column 4: Cancer Expression
+#           column 5: Average Intron Length
+#           column 6: Average Exon Length
+#           column 7: Average Transcript Length
+data.matrix = matrix(NA, nrow=length(common.ids), ncol = 6)
+
+
+
+### Itterates through all IDs needing intron and exon length data.
+### As can be demonstrated here the returned values as provided by
+### GenomicFeatures returns multiple versions per gene provided differed
+### alternativly spliced trnascripts. As such, and as documented, the 
+### average values for both the intron and exon lengths were taken to 
+### represent the values used for further analysis. As Such a further loop
+### is nested within to determined the average for the introns and all needed
+### data to fill out the variable "data.matrix" was obtained and appended
+### to "data.matrix"
+# Note warrnings for values returned as NA will be parsed in subsequent steps before
+# final graphing of the data
+len.common = length(common.ids)
+for(i in seq(1, len.common)){
+  temp.data = transcript_lengths[transcript_lengths$gene_id %in% c(common.ids[i]),]
+
+  sum.temp = 0
+  for(x in c(1, length(temp.data$gene_id))){
+    sum.temp = sum.temp + sum(width(introns[[temp.data[x,2]]]))
+  }
+  
+  average.temp = sum.temp/length(temp.data$gene_id)
+  
+  data.matrix[i, 1] = gene.ids[i]            # Ensembl ID
+  data.matrix[i, 2] = common.ids[i]          # Entrez ID
+  data.matrix[i, 3] = expression.control[i]  # Control Expression
+  data.matrix[i, 4] = expression.cancer[i]   # Cancer Expression
+  data.matrix[i, 5] = average.temp           # Average Intron Length
+  data.matrix[i, 6] = mean(temp.data$tx_len) # Average Exon Length
+
+  print(c(len.common, i)) # print as status update
+}
+
+write.csv(data.matrix, file = "Data_for_Graph_-_Human_(Control-and-Cancer)_-_unparsed.csv", row.names=FALSE, col.names=TRUE)
+
+
+
+
+
+
+
+```
+

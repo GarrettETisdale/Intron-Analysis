@@ -1,0 +1,15 @@
+
+
+```{r}
+
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("TxDb.Mmusculus.UCSC.mm10.knownGene")
+BiocManager::install("GenomicFeatures")
+BiocManager::install("BiocParallel")
+BiocManager::install("org.Mm.eg.db")
+
+
+```

@@ -1,0 +1,121 @@
+
+
+```{r}
+library(TxDb.Mmusculus.UCSC.mm10.knownGene)
+library(org.Mm.eg.db)
+library(stringr)
+
+### txdb format data for the mouse genome to be used with GenomicFeatures
+txdb = TxDb.Mmusculus.UCSC.mm10.knownGene
+
+### Establishing list conversion set to go from MGI IDs to Entrez IDs for GenomicFeatures package
+MGI.list.convert.entrez.ID = as.list(org.Mm.egMGI2EG)
+
+### Reading in selected data from Schwanhausser et al
+MGI.unparsed = read.csv("Schwanhausser et al – unparsed.csv", header = TRUE)
+
+### Blank matrix to be appended to containing:
+#           column 1: MGI ID
+#           column 2: Entrez ID
+#           column 3: mRNA copy number average [molecules/cell]
+#           column 4: mRNA half-life average [h]
+#           column 5: transcription rate (vsr) average [molecules/(cell*h)]
+MGI.list.matrix = matrix(,, nrow = 0, ncol = 5)
+
+### Splits every MGI ID into its base components to be compatable with 
+### variable "MGI.list.convert.entrez.ID" in order to convert MGI ID to Entrez ID
+### and subsequently converts the IDs and adds both to fill out the information
+### needed for the "MGI.list.matrix" matrix as detailed above and appends 
+### a vector containing said informatino to "MGI.list.matrix" matrix
+# Note: Warrnings were ignored during analysis
+for(i in seq(1, length(MGI.unparsed[,1]))){
+  split.string.1 = unlist(strsplit(as.character(MGI.unparsed[i,1]),";"))
+  
+  for(x in seq(1, length(split.string.1))){
+    MGI.id.temp = unlist(strsplit(split.string.1[x],":"))[2]
+    MGI.name.with.spaces = paste('MGI:MGI:', as.character(MGI.id.temp))
+    MGI.name = str_replace_all(string=MGI.name.with.spaces, pattern=" ", repl="")
+    
+    entrez.ID = unlist(MGI.list.convert.entrez.ID[MGI.name])[1]
+    
+    variable.1 = as.character(MGI.name)
+    variable.2 = as.character(entrez.ID)
+    variable.3 = as.character(MGI.unparsed[i, 2])
+    variable.4 = as.character(MGI.unparsed[i, 3])
+    variable.5 = as.character(MGI.unparsed[i, 4])
+    
+    MGI.list.matrix = rbind(MGI.list.matrix, c(variable.1, variable.2, variable.3, variable.4, variable.5))
+  }
+}
+
+### Due to excessive repeated MGI IDs only one MGI ID was used and all
+### repeated values containing the same MGI IDs were discarded
+MGI.list.matrix.no.repeat = MGI.list.matrix[!duplicated(MGI.list.matrix[,2]), ]
+
+###############################################
+#######Aquiring Intron and Exon Lengths########
+###############################################
+
+### Aquiring all transcript (exon) lengths with the lengths of the CDS, 5'UTR, 
+### and 3'UTR included for every mouse gene in txdb mouse genome package
+transcript_lengths = transcriptLengths(txdb, with.cds_len=TRUE, with.utr5_len=TRUE, with.utr3_len=TRUE)
+
+
+### Aquiring all intron lengths for every mouse gene in txdb mouse genome package
+introns = intronsByTranscript(txdb, use.names=TRUE)
+
+### Establishes the list of IDs to be aquired
+common.ids = MGI.list.matrix.no.repeat[,2]
+
+
+### Blank matrix to be appended to containing:
+#           Column 1: MGI ID
+#           column 2: Entrez ID
+#           column 3: mRNA copy number average [molecules/cell]
+#           column 4: mRNA half-life average [h]
+#           column 5: transcription rate (vsr) average [molecules/(cell*h)]
+#           column 6: Average Intron Length
+#           column 7: Average Transcript Length
+data.matrix = matrix(NA, nrow=length(common.ids), ncol = 7)
+
+### Itterates through all IDs needing intron and exon length data.
+### As can be demonstrated here the returned values as provided by
+### GenomicFeatures returns multiple versions per gene provided differed
+### alternativly spliced trnascripts. As such, and as documented, the 
+### average values for both the intron and exon lengths were taken to 
+### represent the values used for further analysis. As Such a further loop
+### is nested within to determined the average for the introns and all needed
+### data to fill out the variable "data.matrix" was obtained and appended
+### to "data.matrix"
+# Note warrnings for values returned as NA will be parsed in subsequent steps before
+# final graphing of the data
+len.common = length(common.ids)
+for(i in seq(1, len.common)){
+  temp.data = transcript_lengths[transcript_lengths$gene_id %in% c(common.ids[i]),]
+
+  sum.temp = c()
+  for(x in c(1, length(temp.data$gene_id))){
+    if(length(temp.data[x,2]) > 0){
+      if(is.na(temp.data[x,2]) == FALSE){
+        sum.temp = c(sum.temp, sum(width(introns[[temp.data[x,2]]])))
+      } 
+    }
+  }
+  
+  data.matrix[i, 1] = MGI.list.matrix.no.repeat[i,1] # MGI ID
+  data.matrix[i, 2] = MGI.list.matrix.no.repeat[i,2] # Entrez ID
+  data.matrix[i, 3] = MGI.list.matrix.no.repeat[i,3] # mRNA Copy Number
+  data.matrix[i, 4] = MGI.list.matrix.no.repeat[i,4] # mRNA Half-life
+  data.matrix[i, 5] = MGI.list.matrix.no.repeat[i,5] # Transcript Rate
+  data.matrix[i, 6] = mean(sum.temp)                 # Average Intron Length
+  data.matrix[i, 7] = mean(temp.data$tx_len)         # Average Transcript Length
+  
+  print(c(len.common, i)) # print as status update
+}
+
+### variable "data.matrix" saved as csv file to be hand parsed
+# for unknown reason warrning "atttemp to set 'col.names' ignored" appears and it itself is ignored
+write.csv(data.matrix, file = "Data_for_Graph_-_Mouse_-_unparsed.csv", row.names=FALSE, col.names=FALSE)
+
+```
+
