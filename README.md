@@ -7,18 +7,18 @@ NOTE: Both the installation programs required for R and R Studio were too large 
 ### Mus musculus:
 1.	Acquired supplementary file 3 from Global quantification of mammalian gene expression control by Bjorn Schwanhausser et al. (https://www.nature.com/articles/nature10098). File name downloaded as nature10098-s5.xls and saved into the Mus musculus folder.
 2.	Copied data column wise selecting columns “MGI ID”, “mRNA copy number average [molecules/cell]”, “mRNA half-life average [h]”, and “transcription rate (vsr) average [molecules/(cell*h)]” into a new csv file for further parsing named “Schwanhausser et al – unparsed.csv” saved into the Mus musculus folder.
-3.	To aid in the recreation of this analysis for third parties R and R studio were uninstalled.
+3.	To aid in the recreation of this analysis for third parties, R and R studio were uninstalled.
 4.	RStudio 1.2.1335 – Windows 7+ (64-bit) installer (release data 2019-04-08) was download and installed with general recommended setup.
-    - Ran R studio and verified no current, unknown, installation of R was found.
-    - Installer saved to ReAnalysis folder as RStudio-1.2.1335.exe
+    - Ran R studio and verified that no current, unknown, installation of R was found.
+    - Installer saved to analysis folder as RStudio-1.2.1335.exe
 5. Downloaded R installer from https://cran.r-project.org/, selecting download R for Windows, install R for the first time, and finally Download R 3.6.1 for Windows.
-    - Installer saved to ReAnalysis folder as R-3.6.1-win.exe
-6.	Installed R on second hard drive, noting the old installation data was still present (but not registered by default by windows as previously established in step 4.a). Deleted old folder and installed the new version in its place.
+    - Installer saved to analysis folder as R-3.6.1-win.exe
+6.	Installed R on second hard drive, noting the old installation data was still present (but not registered by default by windows as previously established in step 4 a). Deleted old folder and installed the new version in its place.
     - Used all default settings including save version number in registry and associate R with .RData files
 7.	 Printed “Hello World” to confirm that default R was installed and working in the RStudio environment.
 8.	Created new R notebook and installed the necessary files as demonstrated in analysis-package-instillations.Rmd located in the Mus musculus folder (always downloaded or updated all (“a”) requested fields)
     - Installed BiocManager for utilizing Bioconductor packages
-    - Installed TxDb.Mmusculus.UCSC.mm10.knownGene for accessing the mouse genome as described https://bioconductor.org/packages/release/data/annotation/html/BSgenome.Mmusculus.UCSC.mm10.html
+    - Installed TxDb.Mmusculus.UCSC.mm10.knownGene for accessing the mouse genome as described in https://bioconductor.org/packages/release/data/annotation/html/BSgenome.Mmusculus.UCSC.mm10.html
     -   Installed BiocParallel due to the default instillations within the other packages causing unnecessary struggle and program failure during the original analysis (installing directly seemed to fix these issues)
     -   Installed org.Mm.eg.db for accessing Entrez ID numbers for the conversion between MGI IDs to Entrez IDs as detailed in https://bioconductor.org/packages/release/data/annotaorg.Mm.eg.dbtion/html/org.Mm.eg.db.html
 9.	All detailed steps required to retrieve intron and exon data are found within the code in Intron-and-Exon-Length-Data-Parsing.Rmd. Final output of which is Data_for_Graph_-_Mouse_-_unparsed.csv.
